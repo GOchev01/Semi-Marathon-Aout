@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Semi-Marathon Tracker — Running Addict</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #111827;
+    --bg2: #1f2937;
+    --bg3: #374151;
+    --accent: #f97316;
+    --accent2: #fb923c;
+    --green: #22c55e;
+    --yellow: #eab308;
+    --red: #ef4444;
+    --text: #f9fafb;
+    --text2: #9ca3af;
+    --text3: #6b7280;
+    --border: #374151;
+    --card: #1f2937;
+    --card2: #111827;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    padding-bottom: 60px;
+  }
+  /* ── HEADER ── */
+  .header {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 20px 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo-icon {
+    width: 36px;
+    height: 36px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+  .logo-text h1 {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+  .logo-text span {
+    font-size: 11px;
+    color: var(--text2);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .header-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .btn-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: all .15s;
+  }
+  .btn-icon:hover { background: var(--bg3); color: var(--text); }
+
+  /* ── PROGRESS TRACK ── */
+  .progress-section {
+    padding: 0 20px 14px;
+  }
+  .progress-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .progress-label {
+    font-size: 11px;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    font-weight: 600;
+  }
+  .progress-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .track-container {
+    position: relative;
+    height: 28px;
+    background: var(--bg);
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .track-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 14px;
+    transition: width .6s cubic-bezier(.4,0,.2,1);
+    position: relative;
+  }
+  .track-fill::after {
+    content: '🏃';
+    position: absolute;
+    right: -2px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 16px;
+    filter: drop-shadow(0 0 4px rgba(249,115,22,.6));
+  }
+  .track-milestones {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    pointer-events: none;
+  }
+  .milestone {
+    flex: 1;
+    border-right: 1px solid rgba(255,255,255,.07);
+  }
+  .milestone:last-child { border-right: none; }
+
+  /* ── WEEK TABS ── */
+  .week-nav {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    padding: 0 20px 12px;
+    scrollbar-width: none;
+  }
+  .week-nav::-webkit-scrollbar { display: none; }
+  .week-tab {
+    flex-shrink: 0;
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text2);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s;
+    font-family: 'Inter', sans-serif;
+    position: relative;
+  }
+  .week-tab.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+  .week-tab.recovery {
+    border-color: #3b82f620;
+  }
+  .week-tab.tapering {
+    border-color: #a855f720;
+  }
+  .week-tab .dot {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--green);
+    display: none;
+  }
+  .week-tab.done .dot { display: block; }
+
+  /* ── MAIN CONTENT ── */
+  .main { padding: 0 16px; }
+
+  .week-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    padding: 12px 16px;
+    background: var(--card);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+  .week-title {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+  .week-badge {
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: 700;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+  }
+  .badge-normal { background: var(--accent)20; color: var(--accent); border: 1px solid var(--accent)40; }
+  .badge-recovery { background: #3b82f620; color: #60a5fa; border: 1px solid #3b82f640; }
+  .badge-tapering { background: #a855f720; color: #c084fc; border: 1px solid #a855f740; }
+  .badge-race { background: #22c55e20; color: #4ade80; border: 1px solid #22c55e40; }
+
+  /* ── SESSION CARDS ── */
+  .session-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    margin-bottom: 10px;
+    overflow: hidden;
+    transition: border-color .2s;
+  }
+  .session-card.done { border-color: var(--green)50; }
+  .session-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px 10px;
+  }
+  .day-badge {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: var(--bg3);
+    color: var(--text2);
+    min-width: 52px;
+    text-align: center;
+  }
+  .session-info { flex: 1; }
+  .session-type {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .session-duration {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text3);
+    margin-top: 2px;
+  }
+  .intensity-dots {
+    display: flex;
+    gap: 3px;
+  }
+  .dot-i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--bg3);
+  }
+  .dot-i.lit { background: var(--accent); }
+
+  /* ── SESSION BODY ── */
+  .session-body {
+    padding: 0 16px 14px;
+  }
+  .workout-blocks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .block {
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+  }
+  .block-ef { background: #1e40af20; color: #60a5fa; border: 1px solid #1e40af40; }
+  .block-frac { background: #f9731620; color: #fb923c; border: 1px solid #f9731640; }
+  .block-recup { background: #6b728020; color: #9ca3af; border: 1px solid #6b728040; }
+
+  .coach-tip {
+    font-size: 11.5px;
+    color: var(--text3);
+    line-height: 1.5;
+    padding: 8px 10px;
+    background: var(--bg)80;
+    border-radius: 8px;
+    border-left: 2px solid var(--accent)40;
+    margin-bottom: 10px;
+  }
+
+  /* ── ACTIONS ROW ── */
+  .session-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .check-btn {
+    flex: 1;
+    padding: 9px 14px;
+    border-radius: 9px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text2);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all .15s;
+    font-family: 'Inter', sans-serif;
+  }
+  .check-btn:hover { background: var(--bg3); color: var(--text); }
+  .check-btn.checked {
+    background: var(--green)20;
+    border-color: var(--green)50;
+    color: var(--green);
+  }
+  .feeling-group {
+    display: flex;
+    gap: 4px;
+  }
+  .feel-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent;
+    cursor: pointer;
+    font-size: 15px;
+    transition: all .15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .feel-btn:hover { background: var(--bg3); transform: scale(1.1); }
+  .feel-btn.selected-weak { background: #3b82f620; border-color: #3b82f6; }
+  .feel-btn.selected-good { background: #22c55e20; border-color: #22c55e; }
+  .feel-btn.selected-strong { background: #f9731620; border-color: #f97316; }
+
+  /* ── PACES PANEL ── */
+  .paces-panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .paces-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .paces-title span { color: var(--text3); font-weight: 400; font-size: 11px; }
+  .paces-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .pace-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .pace-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .7px;
+    color: var(--text3);
+  }
+  .pace-input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    width: 100%;
+    transition: border-color .15s;
+  }
+  .pace-input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .pace-input::placeholder { color: var(--text3); font-weight: 400; }
+  .pace-hint {
+    font-size: 10px;
+    color: var(--text3);
+    margin-top: 2px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ── RACE CARD ── */
+  .race-card {
+    background: linear-gradient(135deg, #22c55e15, #16a34a10);
+    border: 1px solid #22c55e30;
+    border-radius: 14px;
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 10px;
+  }
+  .race-card h3 { font-size: 22px; font-weight: 800; color: #4ade80; margin-bottom: 4px; }
+  .race-card p { font-size: 13px; color: var(--text2); line-height: 1.5; }
+
+  /* ── MODAL (allures) ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.7);
+    z-index: 200;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--bg2);
+    border-radius: 20px 20px 0 0;
+    padding: 20px 20px 40px;
+    width: 100%;
+    max-width: 500px;
+    border: 1px solid var(--border);
+    border-bottom: none;
+    animation: slideUp .25s ease;
+  }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .modal-handle {
+    width: 40px;
+    height: 4px;
+    background: var(--bg3);
+    border-radius: 2px;
+    margin: 0 auto 16px;
+  }
+  .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+  .modal-sub { font-size: 12px; color: var(--text3); margin-bottom: 16px; }
+  .modal-save {
+    width: 100%;
+    padding: 13px;
+    border-radius: 10px;
+    background: var(--accent);
+    border: none;
+    color: white;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 16px;
+    font-family: 'Inter', sans-serif;
+    transition: background .15s;
+  }
+  .modal-save:hover { background: var(--accent2); }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--bg3);
+    color: var(--text);
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    opacity: 0;
+    transition: all .3s;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 300;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div class="logo">
+      <div class="logo-icon">🏃</div>
+      <div class="logo-text">
+        <h1>Semi-Marathon</h1>
+        <span>Plan 12 semaines · 3×/sem</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-icon" onclick="openPaces()" title="Mes allures">⚡</button>
+      <button class="btn-icon" onclick="resetAll()" title="Réinitialiser">↺</button>
+    </div>
+  </div>
+  <div class="progress-section">
+    <div class="progress-meta">
+      <span class="progress-label">Progression</span>
+      <span class="progress-count" id="progressCount">0 / 36 séances</span>
+    </div>
+    <div class="track-container">
+      <div class="track-fill" id="trackFill" style="width:0%">
+        <div class="track-milestones">
+          <div id="milestonesContainer"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="week-nav" id="weekNav"></div>
+</div>
+
+<div class="main" id="mainContent"></div>
+
+<!-- ALLURES MODAL -->
+<div class="modal-overlay" id="pacesModal" onclick="closePacesIfOutside(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">⚡ Mes allures</div>
+    <div class="modal-sub">Saisissez vos allures au format min'sec" (ex : 5'30")</div>
+    <div class="paces-grid">
+      <div class="pace-field">
+        <label class="pace-label">Allure 5km</label>
+        <input class="pace-input" id="pace5km" type="text" placeholder="4'30&quot;" maxlength="7">
+        <div class="pace-hint" id="hint5km"></div>
+      </div>
+      <div class="pace-field">
+        <label class="pace-label">Allure 10km</label>
+        <input class="pace-input" id="pace10km" type="text" placeholder="5'00&quot;" maxlength="7">
+        <div class="pace-hint" id="hint10km"></div>
+      </div>
+      <div class="pace-field">
+        <label class="pace-label">Allure 42km</label>
+        <input class="pace-input" id="pace42km" type="text" placeholder="5'30&quot;" maxlength="7">
+        <div class="pace-hint" id="hint42km"></div>
+      </div>
+      <div class="pace-field">
+        <label class="pace-label">Allure EF</label>
+        <input class="pace-input" id="paceEF" type="text" placeholder="6'30&quot;" maxlength="7">
+        <div class="pace-hint" id="hintEF"></div>
+      </div>
+    </div>
+    <div class="pace-field" style="margin-top:8px">
+      <label class="pace-label">Allure 21km</label>
+      <input class="pace-input" id="pace21km" type="text" placeholder="5'10&quot;" maxlength="7">
+      <div class="pace-hint" id="hint21km"></div>
+    </div>
+    <button class="modal-save" onclick="savePaces()">Enregistrer</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────
+const WEEKS = [
+  {
+    week: 1, type: 'normal',
+    sessions: [
+      { day: 'Mardi', duration: '50\'', intensity: 5, type: 'Fractionné',
+        blocks: [{t:'ef',l:'20\' EF'},{t:'frac',l:'8×1\'30 @5km'},{t:'recup',l:'récup 1\'30'},{t:'ef',l:'5\' EF'}],
+        tip: '1ère séance de fractionné, cherchez à être le plus proche de votre allure 5km. Si c\'est «facile», n\'allez pas plus vite — accélérez plutôt la récupération !' },
+      { day: 'Vendredi', duration: '45\'', intensity: 1, type: 'Endurance Fondamentale',
+        blocks: [{t:'ef',l:'45\' EF'}],
+        tip: 'Mot d\'ordre : relax ! Récupérez du fractionné. Aller trop vite est contre-productif.' },
+      { day: 'Dimanche', duration: '1h10', intensity: 4, type: 'Sortie Longue',
+        blocks: [{t:'ef',l:'30\' EF'},{t:'frac',l:'5×5\' @42km'},{t:'recup',l:'récup 3\' EF'},{t:'ef',l:'5\' EF'}],
+        tip: 'Sortie longue facile pour habituer le corps aux efforts longs. Petite touche d\'allure marathon pour casser la monotonie.' }
+    ]
+  },
+  {
+    week: 2, type: 'normal',
+    sessions: [
+      { day: 'Mardi', duration: '55\'', intensity: 5, type: 'Fractionné',
+        blocks: [{t:'ef',l:'20\' EF'},{t:'frac',l:'10×1\'30 @5km'},{t:'recup',l:'récup 1\'30'},{t:'ef',l:'5\' EF'}],
+        tip: 'Même principe que S1 mais +2 répétitions ! Ça va piquer sur la fin — ne vous crispez pas dans le haut du corps.' },
+      { day: 'Vendredi', duration: '45\'', intensity: 1, type: 'Endurance Fondamentale',
+        blocks: [{t:'ef',l:'45\' EF'}],
+        tip: 'Footing EF. Sensation en fin de séance : être en meilleure forme qu\'au départ. Pas de fatigue, juste des km sans stress !' },
+      { day: 'Dimanche', duration: '1h20', intensity: 4, type: 'Sortie Longue',
+        blocks: [{t:'ef',l:'40\' EF'},{t:'frac',l:'4×7\' @42km'},{t:'recup',l:'récup 2\' EF'},{t:'ef',l:'5\' EF'}],
+        tip: '+10\' sur la sortie longue, durée classique pour un semi-marathonien. Courez bien relâché pendant les segments plus rapides !' }
+    ]
+  },
+  {
+    week: 3, type: 'normal',
+    sessions: [
+      { day: 'Mardi', duration: '1h', intensity: 5, type: 'Fractionné',
+        blocks: [{t:'ef',l:'20\' EF'},{t:'frac',l:'12×1\'30 @5km'},{t:'recup',l:'récup 1\'30'},{t:'ef',l:'5\' EF'}],
+        tip: 'Dernière séance du 1er bloc, 12 répétitions ! Ne lâchez pas dans les derniers intervalles, c\'est là que ça travaille.' },
+      { day: 'Vendredi', duration: '45\'', intensity: 2, type: 'Endurance Fondamentale',
+        blocks: [{t:'ef',l:'45\' EF'}],
+        tip: 'EF = moment idéal pour travailler la technique ! Concentrez-vous sur un point de technique pour bien le respecter.' },
+      { day: 'Dimanche', duration: '1h30', intensity: 4, type: 'Sortie Longue',
+        blocks: [{t:'ef',l:'50\' EF'},{t:'frac',l:'3×10\' @42km'},{t:'recup',l:'récup 2\' EF'},{t:'ef',l:'5\' EF'}],
+        tip: 'On allonge la distance et les temps de fraction. Vous devriez être à l\'aise — sinon, un peu de travail d\'endurance longue à venir.' }
+    ]
+  },
+  {
+    week: 4, type: 'recovery',
+    sessions: [
+      { day: 'Mardi', duration: '30\'', intensity: 1, type: 'Footing Récup',
+        blocks: [{t:'ef',l:'30\' EF'}],
+        tip: 'Semaine d\'assimilation. Toutes les séances baissent en volume et intensité. Simple footing lent, relax, pour récupérer.' },
+      { day: 'Vendredi', duration: '40\'', intensity: 2, type: 'Fractionné Léger',
+        blocks: [{t:'ef',l:'15\' EF'},{t:'frac',l:'8×1\' @10km'},{t:'recup',l:'récup 1\' EF'},{t:'ef',l:'10\' EF'}],
+        tip: 'Séance de fractionné très facile (allure plus lente, fractions courtes). Ne cherchez pas à en faire plus, c\'est une semaine de récup !' },
+      { day: 'Dimanche', duration: '1h15', intensity: 3, type: 'Sortie Longue Récup',
+        blocks: [{t:'ef',l:'1h15 EF'}],
+        tip: '1h15 pour privilégier la récupération. Peu de fatigue, batteries rechargées pour attaquer la suite !' }
+    ]
+  },
+  {
+    week: 5, type: 'normal',
+    sessions: [
+      { day: 'Mardi', duration: '50\'', intensity: 5, type: 'Fractionné',
+        blocks: [{t:'ef',l:'20\' EF'},{t:'frac',l:'5×4\' @10km'},{t:'recup',l:'récup 1\'30'},{t:'ef',l:'5\' EF'}],
+        tip: 'Changement d\'allure : fractionné au 10km. Un peu plus lent mais fractions 2× plus longues. Classique et très efficace !' },
+      { day: 'Vendredi', duration: '45\'', intensity: 2, type: 'Endurance Fondamentale',
+        blocks: [{t:'ef',l:'45\' EF'}],
+        tip: 'Footing de récup, focus sur le relâchement maximum, sans jamais forcer !' },
+      { day: 'Dimanche', duration: '1h30', intensity: 5, type: 'Sortie Longue',
+        blocks: [{t:'ef',l:'50\' EF'},{t:'frac',l:'4×5\' @21km'},{t:'recup',l:'récup 2\' EF'},{t:'ef',l:'15\' EF'}],
+        tip: 'Les sorties longues deviennent plus intenses avec de l\'allure compétition. Commencez à apprivoiser et imprimer ce rythme !' }
+    ]
+  },
+  {
+    week: 6, type: 'normal',
+    sessions: [
+      { day: 'Mardi', duration: '55\'', intensity: 5, type: 'Fractionné',
+        blocks: [{t:'ef',l:'20\' EF'},{t:'frac',l:'5×5\' @10km'},{t:'recup',l:'récup 1\'30'},{t:'ef',l:'5\' EF'}],
+        tip: 'Séance un peu plus dure que S5 avec +1\' sur chaque intervalle à allure 10km… mais rien d\'insurmontable ! ;)' },
+      { day: 'Vendredi', duration: '45\'', intensity: 2, type: 'Endurance Fondamentale',
+        blocks: [{t:'ef',l:'45\' EF'}],
+        tip: 'Toujours en EF, courir relâché avec bonne technique pour économiser l\'énergie… Ce sera la clé le jour du semi !' },
+      { day: 'Dimanche', duration: '1h35', intensity: 5, type: 'Sortie Longue',
+        blocks: [{t:'ef',l:'50\' EF'},{t:'frac',l:'4×6\' @21km'},{t:'recup',l:'récup 2\' EF'},{t:'ef',l:'15\' EF'}],
+        tip: 'Allure semi-marathon en 2ème moitié de sortie — travaillez ce rythme en condition de fatigue, comme en fin de course le Jour J !' }
+    ]
+  },
+  {
+    week: 7, type: 'normal',
+    sessions: [
+      { day: 'Mardi', duration: '1h', intensity: 5, type: 'Fractionné',
+        blocks: [{t:'ef',l:'20\' EF'},{t:'frac',l:'5×6\' @10km'},{t:'recup',l:'récup 1\'30'},{t:'ef',l:'5\' EF'}],
+        tip: 'Dernière séance @10km, blocs de 6\' qui vont challenger — mais vous en êtes capable ! Gardez l\'habitude du rythme rapide.' },
+      { day: 'Vendredi', duration: '45\'', intensity: 2, type: 'Endurance Fondamentale',
+        blocks: [{t:'ef',l:'45\' EF'}],
+        tip: 'Devrait devenir vraiment facile à ce stade. Jambes peut-être lourdes du fractionné, mais le corps s\'y habitue !' },
+      { day: 'Dimanche', duration: '1h40', intensity: 5, type: 'Sortie Longue',
+        blocks: [{t:'ef',l:'50\' EF'},{t:'frac',l:'4×7\' @21km'},{t:'recup',l:'récup 2\' EF'},{t:'ef',l:'15\' EF'}],
+        tip: 'Dernière sortie longue du bloc. Fatigue possible — courir avec cette fatigue vous rendra plus efficace en fin de semi !' }
+    ]
+  },
+  {
+    week: 8, type: 'recovery',
+    sessions: [
+      { day: 'Mardi', duration: '40\'', intensity: 1, type: 'Footing Récup',
+        blocks: [{t:'ef',l:'40\' EF'}],
+        tip: 'On fait tourner les jambes sans jamais forcer. Objectif : récupérer avant les dernières grosses semaines du plan !' },
+      { day: 'Vendredi', duration: '40\'', intensity: 2, type: 'Fractionné Léger',
+        blocks: [{t:'ef',l:'15\' EF'},{t:'frac',l:'5×2\' @10km'},{t:'recup',l:'récup 1\''},{t:'ef',l:'10\' EF'}],
+        tip: 'Même type que S4, facile ! On profite pour courir relâché, sans forcer sur la machine.' },
+      { day: 'Dimanche', duration: '1h15', intensity: 3, type: 'Sortie Longue Récup',
+        blocks: [{t:'ef',l:'1h15 EF'}],
+        tip: 'Sortie longue de récup ! 1h15 après 6 jours de repos = formalité. Sinon, analysez la source de la fatigue.' }
+    ]
+  },
+  {
+    week: 9, type: 'normal',
+    sessions: [
+      { day: 'Mardi', duration: '1h05', intensity: 5, type: 'Fractionné Intense',
+        blocks: [{t:'ef',l:'20\' EF'},{t:'frac',l:'3×10\' @21km'},{t:'recup',l:'récup 2\' EF'},{t:'ef',l:'10\' EF'}],
+        tip: 'Grosse semaine, gros fractionné ! 30\' totales @semi-marathon — la dernière fraction devrait bien vous challenger !' },
+      { day: 'Vendredi', duration: '45\'', intensity: 2, type: 'Endurance Fondamentale',
+        blocks: [{t:'ef',l:'45\' EF'}],
+        tip: 'Footing de récup très doux avant d\'attaquer les séances clés. Soyez le plus relax possible.' },
+      { day: 'Dimanche', duration: '1h40', intensity: 5, type: 'Sortie Longue',
+        blocks: [{t:'ef',l:'1h20 EF'},{t:'frac',l:'15\' @42km→@10km'}],
+        tip: 'EF 1h20 puis 15\' progressif selon fatigue : fatigué = 10\'@42k + 3\'@21k + 2\'@10k. En forme = 5\'/5\'/5\' !' }
+    ]
+  },
+  {
+    week: 10, type: 'normal',
+    sessions: [
+      { day: 'Mardi', duration: '1h', intensity: 5, type: 'Fractionné Clé',
+        blocks: [{t:'ef',l:'20\' EF'},{t:'frac',l:'2×15\' @21km'},{t:'recup',l:'récup 2\' EF'},{t:'ef',l:'10\' EF'}],
+        tip: 'Grosse séance avant le test de S11 ! 2×15\' @semi c\'est intense — si c\'est dur, c\'est dans la tête. Le Jour J, il faudra être fort en fin !' },
+      { day: 'Vendredi', duration: '45\'', intensity: 2, type: 'Endurance Fondamentale',
+        blocks: [{t:'ef',l:'45\' EF'}],
+        tip: 'Récup avec footing lent avant les dernières séances clés. Maximum de relâchement !' },
+      { day: 'Dimanche', duration: '1h45', intensity: 5, type: 'Sortie Longue',
+        blocks: [{t:'ef',l:'1h20 EF'},{t:'frac',l:'20\' @42km→@10km'},{t:'ef',l:'5\' EF'}],
+        tip: 'Sortie longue en feu d\'artifice ! 20\' final progressif et contrôlé — accélération pour ne pas finir à genoux !' }
+    ]
+  },
+  {
+    week: 11, type: 'tapering',
+    sessions: [
+      { day: 'Mardi', duration: '1h05', intensity: 4, type: 'Séance Test ⚑',
+        blocks: [{t:'ef',l:'20\' EF'},{t:'frac',l:'2×20\' @21km'},{t:'recup',l:'récup 2\' EF'},{t:'ef',l:'5\' EF'}],
+        tip: 'SÉANCE TEST ! Ajustez l\'allure selon vos séances passées. La fin doit être difficile mais vous devez tenir. Si vous lâchez… revoyez vos ambitions.' },
+      { day: 'Vendredi', duration: '40\'', intensity: 1, type: 'Récupération',
+        blocks: [{t:'ef',l:'40\' EF'}],
+        tip: 'Mot d\'ordre : récupérer et s\'économiser pour le Jour J. Énergie maximale à conserver !' },
+      { day: 'Dimanche', duration: '1h', intensity: 3, type: 'Sortie Longue Affûtage',
+        blocks: [{t:'ef',l:'30\' EF'},{t:'frac',l:'3×5\' @21km'},{t:'recup',l:'récup 5\' EF'},{t:'ef',l:'5\' EF'}],
+        tip: '1h ça paraît court maintenant ! Rappel d\'allure semi qui doit sembler vraiment facile vs les 5\' de S5.' }
+    ]
+  },
+  {
+    week: 12, type: 'tapering',
+    sessions: [
+      { day: 'Mardi', duration: '30\'', intensity: 1, type: 'Activation',
+        blocks: [{t:'ef',l:'25\' EF'},{t:'frac',l:'6×100m accél. (option)'}],
+        tip: 'Juste bouger pour garder le corps dans le rythme. 25\' très relax. Les 100m sont en option : progressifs, sans forcer, juste pour se dégourdir.' },
+      { day: 'Vendredi', duration: '25\'', intensity: 2, type: 'Rappel Allure',
+        blocks: [{t:'ef',l:'15\' EF'},{t:'frac',l:'3×2\' @21km'},{t:'recup',l:'récup 2\' lent'},{t:'ef',l:'5\' EF'}],
+        tip: 'Dernier rappel d\'allure semi-marathon pour mémoriser le rythme de course. C\'est tout !' },
+      { day: 'Dimanche', duration: '🏆', intensity: 0, type: 'SEMI-MARATHON !',
+        blocks: [{t:'frac',l:'21,097 km 💪'}],
+        tip: 'Bonne course !! 12 semaines de travail pour ça — profitez ! Respectez votre plan coûte que coûte. La course commence vraiment km 12-13, avant c\'est normal que ce soit facile — n\'accélérez pas !' }
+    ]
+  }
+];
+
+const LABELS_INTENSITY = ['','●○○○○','●●○○○','●●●○○','●●●●○','●●●●●'];
+
+// ── STATE ─────────────────────────────────────────────────────────────────
+let state = {
+  currentWeek: 0,
+  done: {}, // "w1s0": true
+  feelings: {}, // "w1s0": 'weak'|'good'|'strong'
+  paces: { '5km':'', '10km':'', '21km':'', '42km':'', 'EF':'' }
+};
+
+function loadState() {
+  try {
+    const s = localStorage.getItem('semiMarathonTracker');
+    if (s) state = { ...state, ...JSON.parse(s) };
+  } catch(e) {}
+}
+
+function saveState() {
+  try {
+    localStorage.setItem('semiMarathonTracker', JSON.stringify(state));
+  } catch(e) {}
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────
+function countDone() {
+  return Object.values(state.done).filter(Boolean).length;
+}
+
+function updateProgress() {
+  const done = countDone();
+  const total = 36;
+  const pct = Math.min(100, Math.round(done / total * 100));
+  document.getElementById('progressCount').textContent = `${done} / ${total} séances`;
+  document.getElementById('trackFill').style.width = pct + '%';
+}
+
+function buildWeekNav() {
+  const nav = document.getElementById('weekNav');
+  nav.innerHTML = '';
+  WEEKS.forEach((w, i) => {
+    const tab = document.createElement('button');
+    tab.className = `week-tab${w.type === 'recovery' ? ' recovery' : ''}${w.type === 'tapering' ? ' tapering' : ''}${i === state.currentWeek ? ' active' : ''}`;
+    const allDone = w.sessions.every((_, si) => state.done[`w${w.week}s${si}`]);
+    if (allDone) tab.classList.add('done');
+    tab.innerHTML = `S${w.week}<span class="dot"></span>`;
+    tab.onclick = () => { state.currentWeek = i; saveState(); renderAll(); };
+    nav.appendChild(tab);
+  });
+}
+
+function blockClass(t) {
+  if (t === 'ef') return 'block-ef';
+  if (t === 'frac') return 'block-frac';
+  return 'block-recup';
+}
+
+function typeBadge(type) {
+  if (type === 'recovery') return '<span class="week-badge badge-recovery">Récupération</span>';
+  if (type === 'tapering') return '<span class="week-badge badge-tapering">Affûtage</span>';
+  if (type === 'race') return '<span class="week-badge badge-race">Course !</span>';
+  return '<span class="week-badge badge-normal">Normal</span>';
+}
+
+function buildSessionCard(w, session, si) {
+  const key = `w${w.week}s${si}`;
+  const isDone = !!state.done[key];
+  const feeling = state.feelings[key] || '';
+  const isRace = session.type.includes('SEMI-MARATHON');
+
+  const dots = Array.from({length:5}, (_,i) =>
+    `<div class="dot-i${i < session.intensity ? ' lit' : ''}"></div>`
+  ).join('');
+
+  const blocks = session.blocks.map(b =>
+    `<span class="block ${blockClass(b.t)}">${b.l}</span>`
+  ).join('');
+
+  if (isRace) {
+    return `<div class="race-card" id="card-${key}">
+      <h3>🏆 SEMI-MARATHON !</h3>
+      <p>${session.tip}</p>
+    </div>`;
+  }
+
+  return `<div class="session-card${isDone ? ' done' : ''}" id="card-${key}">
+    <div class="session-card-header">
+      <span class="day-badge">${session.day}</span>
+      <div class="session-info">
+        <div class="session-type">${session.type}</div>
+        <div class="session-duration">⏱ ${session.duration}</div>
+      </div>
+      <div class="intensity-dots">${dots}</div>
+    </div>
+    <div class="session-body">
+      <div class="workout-blocks">${blocks}</div>
+      <div class="coach-tip">💬 ${session.tip}</div>
+      <div class="session-actions">
+        <button class="check-btn${isDone ? ' checked' : ''}" onclick="toggleDone('${key}')">
+          ${isDone ? '✅ Réalisé !' : '○  Marquer comme fait'}
+        </button>
+        <div class="feeling-group">
+          <button class="feel-btn${feeling==='weak' ? ' selected-weak' : ''}" title="Ressenti faible" onclick="setFeeling('${key}','weak')">😴</button>
+          <button class="feel-btn${feeling==='good' ? ' selected-good' : ''}" title="Ressenti bon" onclick="setFeeling('${key}','good')">💪</button>
+          <button class="feel-btn${feeling==='strong' ? ' selected-strong' : ''}" title="Ressenti fort" onclick="setFeeling('${key}','strong')">🔥</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function buildWeekContent(weekIdx) {
+  const w = WEEKS[weekIdx];
+  let html = `<div class="week-header">
+    <div class="week-title">Semaine ${w.week}</div>
+    ${typeBadge(w.type)}
+  </div>`;
+
+  // Show paces reminder if set
+  const p = state.paces;
+  const hasPaces = p['5km'] || p['10km'] || p['21km'] || p['EF'];
+  if (hasPaces) {
+    html += `<div class="paces-panel">
+      <div class="paces-title">⚡ Mes allures <span>— tapez ⚡ en haut pour modifier</span></div>
+      <div class="paces-grid">
+        ${p['5km'] ? `<div class="pace-field"><div class="pace-label">5km</div><div class="pace-input" style="background:transparent;border-color:var(--accent)30;padding:6px 10px;font-size:13px">${p['5km']}</div></div>` : ''}
+        ${p['10km'] ? `<div class="pace-field"><div class="pace-label">10km</div><div class="pace-input" style="background:transparent;border-color:var(--accent)30;padding:6px 10px;font-size:13px">${p['10km']}</div></div>` : ''}
+        ${p['21km'] ? `<div class="pace-field"><div class="pace-label">21km</div><div class="pace-input" style="background:transparent;border-color:var(--accent)30;padding:6px 10px;font-size:13px">${p['21km']}</div></div>` : ''}
+        ${p['42km'] ? `<div class="pace-field"><div class="pace-label">42km</div><div class="pace-input" style="background:transparent;border-color:var(--accent)30;padding:6px 10px;font-size:13px">${p['42km']}</div></div>` : ''}
+        ${p['EF'] ? `<div class="pace-field"><div class="pace-label">EF</div><div class="pace-input" style="background:transparent;border-color:var(--accent)30;padding:6px 10px;font-size:13px">${p['EF']}</div></div>` : ''}
+      </div>
+    </div>`;
+  } else {
+    html += `<div style="background:var(--card);border:1px dashed var(--border);border-radius:12px;padding:14px;margin-bottom:14px;text-align:center;cursor:pointer" onclick="openPaces()">
+      <div style="font-size:20px;margin-bottom:4px">⚡</div>
+      <div style="font-size:13px;font-weight:600;color:var(--text2)">Renseignez vos allures</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:2px">Tapez ici pour personnaliser le plan</div>
+    </div>`;
+  }
+
+  w.sessions.forEach((s, si) => {
+    html += buildSessionCard(w, s, si);
+  });
+
+  return html;
+}
+
+function renderAll() {
+  buildWeekNav();
+  document.getElementById('mainContent').innerHTML = buildWeekContent(state.currentWeek);
+  updateProgress();
+
+  // Scroll nav to active tab
+  const nav = document.getElementById('weekNav');
+  const activeTab = nav.querySelector('.active');
+  if (activeTab) activeTab.scrollIntoView({ inline: 'center', behavior: 'smooth' });
+}
+
+// ── ACTIONS ───────────────────────────────────────────────────────────────
+function toggleDone(key) {
+  state.done[key] = !state.done[key];
+  if (!state.done[key]) delete state.done[key];
+  saveState();
+  renderAll();
+  showToast(state.done[key] ? '✅ Séance validée !' : 'Séance décochée');
+}
+
+function setFeeling(key, feeling) {
+  if (state.feelings[key] === feeling) {
+    delete state.feelings[key];
+  } else {
+    state.feelings[key] = feeling;
+  }
+  saveState();
+  renderAll();
+  const labels = { weak: '😴 Faible', good: '💪 Bon', strong: '🔥 Fort' };
+  showToast(state.feelings[key] ? labels[feeling] : 'Ressenti retiré');
+}
+
+function openPaces() {
+  document.getElementById('pace5km').value = state.paces['5km'] || '';
+  document.getElementById('pace10km').value = state.paces['10km'] || '';
+  document.getElementById('pace21km').value = state.paces['21km'] || '';
+  document.getElementById('pace42km').value = state.paces['42km'] || '';
+  document.getElementById('paceEF').value = state.paces['EF'] || '';
+  document.getElementById('pacesModal').classList.add('open');
+}
+
+function closePacesIfOutside(e) {
+  if (e.target === document.getElementById('pacesModal')) {
+    document.getElementById('pacesModal').classList.remove('open');
+  }
+}
+
+function savePaces() {
+  state.paces['5km'] = document.getElementById('pace5km').value.trim();
+  state.paces['10km'] = document.getElementById('pace10km').value.trim();
+  state.paces['21km'] = document.getElementById('pace21km').value.trim();
+  state.paces['42km'] = document.getElementById('pace42km').value.trim();
+  state.paces['EF'] = document.getElementById('paceEF').value.trim();
+  saveState();
+  document.getElementById('pacesModal').classList.remove('open');
+  renderAll();
+  showToast('⚡ Allures enregistrées !');
+}
+
+function resetAll() {
+  if (!confirm('Réinitialiser toute la progression ?')) return;
+  const paces = state.paces;
+  state = { currentWeek: 0, done: {}, feelings: {}, paces };
+  saveState();
+  renderAll();
+  showToast('↺ Progression réinitialisée');
+}
+
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+loadState();
+renderAll();
+</script>
+</body>
+</html>
